@@ -83,3 +83,14 @@ if st.button("Predict"):
         st.error("⚠️ Prediction: Customer is likely to churn.")
     else:
         st.success("✅ Prediction: Customer is not likely to churn.")
+import os, joblib, streamlit as st
+
+MODEL_PATH = "churn_pipeline.joblib"
+
+st.write("Current folder files:", os.listdir("."))  # temporary debug
+
+if not os.path.exists(MODEL_PATH):
+    st.error(f"Missing {MODEL_PATH}. Please upload it to the repo root.")
+    st.stop()
+
+model = joblib.load(MODEL_PATH)
