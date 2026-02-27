@@ -8,28 +8,33 @@ from datetime import datetime
 # ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="Customer Churn Prediction", page_icon="📉", layout="wide")
 
+
 # ------------------ LOGIN + LOGOUT ------------------
 def check_login() -> bool:
     st.sidebar.markdown("## 🔒 Login")
 
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
-
+    # Session state init
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
-    # Only show Login button if not logged in
+    # If NOT logged in → show login form
     if not st.session_state.logged_in:
+        username = st.sidebar.text_input("Username")
+        password = st.sidebar.text_input("Password", type="password")
+
         if st.sidebar.button("Login"):
             u_ok = username == st.secrets.get("APP_USERNAME", "")
             p_ok = password == st.secrets.get("APP_PASSWORD", "")
+
             if u_ok and p_ok:
                 st.session_state.logged_in = True
                 st.rerun()
             else:
                 st.sidebar.error("Wrong username or password")
+
+    # If logged in → show logout button
     else:
-        # Logout button if logged in
+        st.sidebar.success("Logged in ✅")
         if st.sidebar.button("Logout"):
             st.session_state.logged_in = False
             st.rerun()
@@ -37,32 +42,35 @@ def check_login() -> bool:
     return st.session_state.logged_in
 
 
+# Stop app if not logged in
 if not check_login():
     st.title("📉 Customer Churn Prediction")
     st.warning("Please login from the sidebar to use the app.")
     st.stop()
+
 
 # ------------------ TITLE ------------------
 st.title("📉 Customer Churn Prediction")
 st.caption("Fill the customer details in the sidebar and click **Predict** to get churn probability.")
 st.markdown("---")
 
+
 # ------------------ MULTI-MODEL SETUP ------------------
-# Add more models later by uploading files and adding to this dict
 MODEL_OPTIONS = {
     "Main Model (Pipeline)": "churn_pipeline.joblib",
-    # Example:
-    # "Logistic Regression": "churn_pipeline_lr.joblib",
-    # "Random Forest": "churn_pipeline_rf.joblib",
+    "Logistic Regression": "churn_pipeline_lr.joblib",
+    "Random Forest": "churn_pipeline_rf.joblib",
 }
 
-st.sidebar.markdown("## 🧠 Model")
+st.sidebar.markdown("## 🧠 Model Selection")
 model_choice = st.sidebar.selectbox("Choose model", list(MODEL_OPTIONS.keys()))
 MODEL_PATH = MODEL_OPTIONS[model_choice]
+
 
 @st.cache_resource
 def load_model(path: str):
     return joblib.load(path)
+
 
 if not os.path.exists(MODEL_PATH):
     st.error(f"Model file not found: `{MODEL_PATH}`. Upload it to the GitHub repo root.")
@@ -73,6 +81,7 @@ try:
 except Exception as e:
     st.error(f"Could not load model `{MODEL_PATH}`.\n\nError: {e}")
     st.stop()
+
 
 # ------------------ INPUTS (SIDEBAR) ------------------
 st.sidebar.markdown("## 🧾 Customer Inputs")
@@ -95,7 +104,7 @@ monthly = st.sidebar.number_input("MonthlyCharges", min_value=0.0, value=70.0)
 total = st.sidebar.number_input("TotalCharges", min_value=0.0, value=float(monthly * max(int(tenure), 1)))
 avg = total / tenure if tenure > 0 else 0.0
 
-# Must match training features; defaults fill remaining columns
+# Must match training feature columns (defaults for missing ones)
 input_row = {
     "gender": gender,
     "SeniorCitizen": int(senior),
@@ -121,7 +130,8 @@ input_row = {
 
 X_input = pd.DataFrame([input_row])
 
-# ------------------ LAYOUT ------------------
+
+# ------------------ MAIN LAYOUT ------------------
 left, right = st.columns([1.2, 1])
 
 with left:
@@ -150,7 +160,7 @@ with right:
             else:
                 st.error("High Risk 🔴")
 
-            # ---- Final message ----
+            # ---- Final prediction message ----
             if pred == 1:
                 st.error("⚠️ Prediction: Customer is likely to churn.")
             else:
@@ -184,6 +194,7 @@ with right:
                 file_name="churn_prediction_report.csv",
                 mime="text/csv",
             )
+
             st.download_button(
                 "⬇️ Download JSON report",
                 data=json_bytes,
@@ -207,18 +218,14 @@ with right:
                 }).sort_values("importance", ascending=False).head(15)
 
                 st.bar_chart(fi.set_index("feature"))
+
             elif hasattr(estimator, "coef_"):
                 coef = estimator.coef_
                 coef_1d = coef[0] if hasattr(coef, "shape") and len(coef.shape) > 1 else coef
-
-                fi = pd.DataFrame({
-                    "feature": [f"f{i}" for i in range(len(coef_1d))],
-                    "importance": coef_1d,
-                }).reindex(fi.index if "fi" in locals() else None)
-
                 st.bar_chart(pd.DataFrame({"coef": coef_1d}))
+
             else:
-                st.info("This model does not expose feature importance, or it can't be extracted from the pipeline.")
+                st.info("Feature importance not available for this model.")
 
         except Exception as e:
             st.error(f"Prediction failed. Error: {e}")
