@@ -5,29 +5,37 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# ------------------ CONFIG ------------------
+# ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="Customer Churn Prediction", page_icon="📉", layout="wide")
 
-# ------------------ BASIC AUTH ------------------
-def check_login():
+# ------------------ LOGIN + LOGOUT ------------------
+def check_login() -> bool:
     st.sidebar.markdown("## 🔒 Login")
 
     username = st.sidebar.text_input("Username")
     password = st.sidebar.text_input("Password", type="password")
-    login_btn = st.sidebar.button("Login")
 
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
 
-    if login_btn:
-        u_ok = username == st.secrets.get("APP_USERNAME", "")
-        p_ok = password == st.secrets.get("APP_PASSWORD", "")
-        if u_ok and p_ok:
-            st.session_state.logged_in = True
-        else:
-            st.sidebar.error("Wrong username or password")
+    # Only show Login button if not logged in
+    if not st.session_state.logged_in:
+        if st.sidebar.button("Login"):
+            u_ok = username == st.secrets.get("APP_USERNAME", "")
+            p_ok = password == st.secrets.get("APP_PASSWORD", "")
+            if u_ok and p_ok:
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.sidebar.error("Wrong username or password")
+    else:
+        # Logout button if logged in
+        if st.sidebar.button("Logout"):
+            st.session_state.logged_in = False
+            st.rerun()
 
     return st.session_state.logged_in
+
 
 if not check_login():
     st.title("📉 Customer Churn Prediction")
@@ -36,27 +44,28 @@ if not check_login():
 
 # ------------------ TITLE ------------------
 st.title("📉 Customer Churn Prediction")
-st.caption("Fill the customer details in the sidebar and click **Predict**.")
+st.caption("Fill the customer details in the sidebar and click **Predict** to get churn probability.")
+st.markdown("---")
 
-# ------------------ MULTI-MODEL LOADER ------------------
-# Add multiple model files here (upload them to repo root)
+# ------------------ MULTI-MODEL SETUP ------------------
+# Add more models later by uploading files and adding to this dict
 MODEL_OPTIONS = {
     "Main Model (Pipeline)": "churn_pipeline.joblib",
-    # Add more when you have them:
+    # Example:
     # "Logistic Regression": "churn_pipeline_lr.joblib",
     # "Random Forest": "churn_pipeline_rf.joblib",
 }
+
+st.sidebar.markdown("## 🧠 Model")
+model_choice = st.sidebar.selectbox("Choose model", list(MODEL_OPTIONS.keys()))
+MODEL_PATH = MODEL_OPTIONS[model_choice]
 
 @st.cache_resource
 def load_model(path: str):
     return joblib.load(path)
 
-st.sidebar.markdown("## 🧠 Model Selection")
-model_choice = st.sidebar.selectbox("Choose model", list(MODEL_OPTIONS.keys()))
-MODEL_PATH = MODEL_OPTIONS[model_choice]
-
 if not os.path.exists(MODEL_PATH):
-    st.error(f"Model file not found: `{MODEL_PATH}`. Upload it to the repo root.")
+    st.error(f"Model file not found: `{MODEL_PATH}`. Upload it to the GitHub repo root.")
     st.stop()
 
 try:
@@ -86,7 +95,7 @@ monthly = st.sidebar.number_input("MonthlyCharges", min_value=0.0, value=70.0)
 total = st.sidebar.number_input("TotalCharges", min_value=0.0, value=float(monthly * max(int(tenure), 1)))
 avg = total / tenure if tenure > 0 else 0.0
 
-# Defaults for missing columns (must match training features)
+# Must match training features; defaults fill remaining columns
 input_row = {
     "gender": gender,
     "SeniorCitizen": int(senior),
@@ -112,33 +121,45 @@ input_row = {
 
 X_input = pd.DataFrame([input_row])
 
-# ------------------ MAIN LAYOUT ------------------
+# ------------------ LAYOUT ------------------
 left, right = st.columns([1.2, 1])
 
 with left:
     st.subheader("Input Summary")
     st.dataframe(X_input, use_container_width=True)
-
     predict_btn = st.button("Predict", type="primary")
 
 with right:
     st.subheader("Prediction")
 
-    if predict_btn:
+    if not predict_btn:
+        st.info("Click **Predict** to see results.")
+    else:
         try:
             proba = float(model.predict_proba(X_input)[0][1])
             pred = int(proba >= 0.5)
 
-            st.metric("Churn probability", f"{proba:.3f}")
+            # ---- Probability Dashboard ----
+            st.metric("Churn Probability", f"{proba*100:.1f}%")
             st.progress(min(max(proba, 0.0), 1.0))
 
+            if proba < 0.30:
+                st.success("Low Risk 🟢")
+            elif proba < 0.60:
+                st.warning("Medium Risk 🟡")
+            else:
+                st.error("High Risk 🔴")
+
+            # ---- Final message ----
             if pred == 1:
                 st.error("⚠️ Prediction: Customer is likely to churn.")
             else:
                 st.success("✅ Prediction: Customer is not likely to churn.")
 
+            st.markdown("---")
+
             # ------------------ DOWNLOAD REPORT ------------------
-            st.subheader("Download report")
+            st.subheader("Download Prediction Report")
 
             report = {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -152,7 +173,7 @@ with right:
             csv_bytes = X_input.assign(
                 churn_probability=proba,
                 prediction_label=pred,
-                model=model_choice
+                model=model_choice,
             ).to_csv(index=False).encode("utf-8")
 
             json_bytes = json.dumps(report, indent=2).encode("utf-8")
@@ -170,42 +191,34 @@ with right:
                 mime="application/json",
             )
 
-            # ------------------ FEATURE IMPORTANCE ------------------
-            st.subheader("Feature importance (if available)")
+            st.markdown("---")
 
-            # Try to locate final estimator inside a Pipeline
+            # ------------------ FEATURE IMPORTANCE ------------------
+            st.subheader("Feature Importance (if available)")
+
             estimator = model
             if hasattr(model, "named_steps") and len(model.named_steps) > 0:
-                # last step is usually the estimator
                 estimator = list(model.named_steps.values())[-1]
 
-            # Works for linear models / tree models (if feature names can be derived)
-            if hasattr(estimator, "feature_importances_") or hasattr(estimator, "coef_"):
-                # Try to get feature names from preprocessing
-                feature_names = None
-                try:
-                    if hasattr(model, "get_feature_names_out"):
-                        feature_names = model.get_feature_names_out()
-                except Exception:
-                    feature_names = None
+            if hasattr(estimator, "feature_importances_"):
+                fi = pd.DataFrame({
+                    "feature": [f"f{i}" for i in range(len(estimator.feature_importances_))],
+                    "importance": estimator.feature_importances_,
+                }).sort_values("importance", ascending=False).head(15)
 
-                if hasattr(estimator, "feature_importances_"):
-                    importances = estimator.feature_importances_
-                else:
-                    # coef_ may be 2D for classifiers
-                    coef = estimator.coef_
-                    importances = coef[0] if hasattr(coef, "__len__") and len(coef) > 0 else coef
+                st.bar_chart(fi.set_index("feature"))
+            elif hasattr(estimator, "coef_"):
+                coef = estimator.coef_
+                coef_1d = coef[0] if hasattr(coef, "shape") and len(coef.shape) > 1 else coef
 
                 fi = pd.DataFrame({
-                    "feature": feature_names if feature_names is not None else [f"f{i}" for i in range(len(importances))],
-                    "importance": importances
-                }).sort_values("importance", ascending=False).head(20)
+                    "feature": [f"f{i}" for i in range(len(coef_1d))],
+                    "importance": coef_1d,
+                }).reindex(fi.index if "fi" in locals() else None)
 
-                st.dataframe(fi, use_container_width=True)
+                st.bar_chart(pd.DataFrame({"coef": coef_1d}))
             else:
-                st.info("This model type does not expose feature importance (or it can't be extracted from the pipeline).")
+                st.info("This model does not expose feature importance, or it can't be extracted from the pipeline.")
 
         except Exception as e:
             st.error(f"Prediction failed. Error: {e}")
-    else:
-        st.info("Click **Predict** to see results.")
