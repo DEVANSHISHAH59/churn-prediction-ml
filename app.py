@@ -8,52 +8,10 @@ from datetime import datetime
 # ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="Customer Churn Prediction", page_icon="📉", layout="wide")
 
-
-# ------------------ LOGIN + LOGOUT ------------------
-def check_login() -> bool:
-    st.sidebar.markdown("## 🔒 Login")
-
-    # Session state init
-    if "logged_in" not in st.session_state:
-        st.session_state.logged_in = False
-
-    # If NOT logged in → show login form
-    if not st.session_state.logged_in:
-        username = st.sidebar.text_input("Username")
-        password = st.sidebar.text_input("Password", type="password")
-
-        if st.sidebar.button("Login"):
-            u_ok = username == st.secrets.get("APP_USERNAME", "")
-            p_ok = password == st.secrets.get("APP_PASSWORD", "")
-
-            if u_ok and p_ok:
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.sidebar.error("Wrong username or password")
-
-    # If logged in → show logout button
-    else:
-        st.sidebar.success("Logged in ✅")
-        if st.sidebar.button("Logout"):
-            st.session_state.logged_in = False
-            st.rerun()
-
-    return st.session_state.logged_in
-
-
-# Stop app if not logged in
-if not check_login():
-    st.title("📉 Customer Churn Prediction")
-    st.warning("Please login from the sidebar to use the app.")
-    st.stop()
-
-
 # ------------------ TITLE ------------------
 st.title("📉 Customer Churn Prediction")
 st.caption("Fill the customer details in the sidebar and click **Predict** to get churn probability.")
 st.markdown("---")
-
 
 # ------------------ MULTI-MODEL SETUP ------------------
 MODEL_OPTIONS = {
