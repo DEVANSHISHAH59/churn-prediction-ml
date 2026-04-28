@@ -420,61 +420,55 @@ def age_badge(age):
     if age<=14: return '<span class="newb">NEW</span>'
     return ""
 
-# ── TOP NAVIGATION (replaces sidebar) ────────────────────────────────────────
-PAGES = [
-    "Dashboard", "Live Jobs", "Silicon Republic",
-    "Silicon Valley & AI News", "All Dublin Companies",
-    "Startups", "Job Portals", "Recruitment Agencies",
-    "My Tracker", "CV Editor", "Interview Prep",
-    "Weekly Job Plan", "Salary Guide"
-]
+# ── NAVIGATION ───────────────────────────────────────────────────────────────
 
-# Quote display at top
-q, author = st.session_state.quote
-st.markdown(f"""<div class="quote-box" style="margin-bottom:0.8rem">
-<div style="font-size:13px;font-style:italic;color:#ddd6fe;line-height:1.5">"{q}"</div>
-<div style="font-size:11px;color:#a78bfa;margin-top:5px">-- {author}</div>
+# Hero banner
+st.markdown("""
+<div class="hero" style="padding:1rem 1.5rem;margin-bottom:1rem">
+<h1 style="font-size:1.5rem;margin:0 0 3px">Lets Get Hired - Devanshi</h1>
+<p style="font-size:13px;opacity:0.85;margin:0">Dublin job hunt command centre - Trust & Safety - AI Analyst - Data Analyst - Product Owner - Business Analyst</p>
 </div>""", unsafe_allow_html=True)
 
-# Top nav bar with all pages as buttons
-if "page" not in st.session_state:
-    st.session_state.page = "Dashboard"
+# Simple quote
+q, author = st.session_state.quote
+st.markdown(f"""<div style="background:#2d1063;border-left:4px solid #a78bfa;border-radius:10px;padding:10px 14px;margin-bottom:1rem">
+<span style="font-size:13px;font-style:italic;color:#ddd6fe">"{q}"</span>
+<span style="font-size:11px;color:#a78bfa;margin-left:8px">-- {author}</span>
+</div>""", unsafe_allow_html=True)
 
-# Row 1 of nav
-nav_cols1 = st.columns(len(PAGES[:7]))
-for i, p in enumerate(PAGES[:7]):
-    with nav_cols1[i]:
-        active = st.session_state.page == p
-        if st.button(p, key=f"nav1_{p}", use_container_width=True,
-                     type="primary" if active else "secondary"):
-            st.session_state.page = p
-            st.rerun()
+# Navigation - simple columns of links + dropdown
+nav_c1, nav_c2, nav_c3 = st.columns([1, 2, 1])
+with nav_c1:
+    apps_count = len(DATA["applications"])
+    interviews_count = sum(1 for a in DATA["applications"] if a.get("status")=="Interviewing")
+    st.markdown(f"**{apps_count}** tracked &nbsp;|&nbsp; **{interviews_count}** interviews")
+with nav_c2:
+    page = st.selectbox(
+        "Navigate to",
+        ["Dashboard", "Live Jobs", "Silicon Republic",
+         "Silicon Valley & AI News", "All Dublin Companies",
+         "Startups", "Job Portals", "Recruitment Agencies",
+         "My Tracker", "CV Editor", "Interview Prep",
+         "Weekly Job Plan", "Salary Guide"],
+        label_visibility="collapsed"
+    )
+with nav_c3:
+    if st.button("New quote"):
+        st.session_state.quote = random.choice(QUOTES)
+        st.session_state.tip   = random.choice(JOB_SEARCH_TIPS)
+        st.session_state.fact  = random.choice(FUN_FACTS)
+        st.rerun()
 
-# Row 2 of nav
-nav_cols2 = st.columns(len(PAGES[7:]))
-for i, p in enumerate(PAGES[7:]):
-    with nav_cols2[i]:
-        active = st.session_state.page == p
-        if st.button(p, key=f"nav2_{p}", use_container_width=True,
-                     type="primary" if active else "secondary"):
-            st.session_state.page = p
-            st.rerun()
-
-st.markdown("<hr>", unsafe_allow_html=True)
-page = st.session_state.page
-
-# Quick stats bar
-apps = DATA["applications"]
-total_a = len(apps)
-interviews_a = sum(1 for a in apps if a.get("status")=="Interviewing")
-col_s1, col_s2, col_s3, col_s4, col_s5, col_s6 = st.columns(6)
-col_s1.markdown(f"**{total_a}** tracked")
-col_s2.markdown(f"**{interviews_a}** interviews")
-col_s3.markdown("📰 [Silicon Republic](https://www.siliconrepublic.com)")
-col_s4.markdown("💼 [LinkedIn](https://www.linkedin.com/jobs/search/?keywords=trust+safety+analyst&location=Dublin)")
-col_s5.markdown("🔍 [Indeed](https://ie.indeed.com/jobs?q=analyst&l=Dublin&fromage=1)")
-col_s6.markdown("🇮🇪 [IrishJobs](https://www.irishjobs.ie)")
-st.markdown("<hr>", unsafe_allow_html=True)
+# Quick links row
+st.markdown("""<div style="display:flex;gap:16px;flex-wrap:wrap;padding:6px 0;border-top:1px solid #2d1063;border-bottom:1px solid #2d1063;margin-bottom:1rem">
+<a href="https://www.siliconrepublic.com" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">📰 Silicon Republic</a>
+<a href="https://www.linkedin.com/jobs/search/?keywords=trust+safety+analyst&location=Dublin&f_TPR=r86400" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">💼 LinkedIn Jobs</a>
+<a href="https://ie.indeed.com/jobs?q=analyst&l=Dublin&fromage=1" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">🔍 Indeed Ireland</a>
+<a href="https://www.irishjobs.ie/Jobs/analyst/in-Dublin" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">🇮🇪 IrishJobs</a>
+<a href="https://otta.com/jobs/search?location=Dublin" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">🟣 Otta</a>
+<a href="https://www.cpl.com/jobs" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">🤝 CPL</a>
+<a href="https://builtindublin.ie/jobs" target="_blank" style="color:#a78bfa;font-size:12px;text-decoration:none">🏗 Built In Dublin</a>
+</div>""", unsafe_allow_html=True)
 
 apps = DATA["applications"]
 
@@ -482,14 +476,6 @@ apps = DATA["applications"]
 # DASHBOARD
 # ═══════════════════════════════════════════════════════════════════════════════
 if page == "Dashboard":
-    q, author = st.session_state.quote
-    st.markdown(f"""<div class="quote-box">
-        <div style="font-size:15px;font-style:italic;color:#ddd6fe;line-height:1.6">"{q}"</div>
-        <div style="font-size:12px;color:#a78bfa;margin-top:6px">-- {author}</div>
-    </div>""", unsafe_allow_html=True)
-
-    st.markdown('<div class="hero"><h1>Lets Get Hired - Devanshi</h1><p>Dublin job hunt command centre - Trust & Safety - AI Analyst - Data Analyst - Product Owner - Business Analyst</p></div>', unsafe_allow_html=True)
-
     c1,c2,c3,c4,c5 = st.columns(5)
     c1.metric("Tracked",    len(apps))
     c2.metric("Applied",    sum(1 for a in apps if a.get("status")=="Applied"))
