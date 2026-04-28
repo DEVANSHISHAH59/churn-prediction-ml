@@ -111,7 +111,7 @@ ALL_COMPANIES = [
     ("Geneva Trading",      "GT",  "Startup",      "Prop trading tech. Dublin office.",             "https://www.genevatrading.com/careers/"),
 ]
 
-st.set_page_config(page_title="Lets Get Hired - Devanshi", page_icon=":rocket:", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Lets Get Hired - Devanshi", page_icon=":rocket:", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <style>
@@ -149,54 +149,15 @@ html,body,[class*="css"]{font-family:'DM Sans',sans-serif;}
 .fun-fact{background:#064e3b;border:1px solid #065f46;border-radius:12px;padding:0.8rem 1rem;margin-bottom:8px;}
 hr{border:none;border-top:1px solid #2d1063;margin:0.8rem 0;}
 #MainMenu,footer,header{visibility:hidden;}
-/* Hide ALL collapse/expand buttons */
-[data-testid="collapsedControl"]{display:none!important;}
-[data-testid="stSidebarCollapsedControl"]{display:none!important;}
-button[kind="header"]{display:none!important;}
-.st-emotion-cache-1egp75f{display:none!important;}
-/* Force sidebar open and visible */
-section[data-testid="stSidebar"]{
-    min-width:270px!important;
-    max-width:270px!important;
-    transform:none!important;
-    display:block!important;
-    visibility:visible!important;
-    opacity:1!important;
-}
-section[data-testid="stSidebar"][aria-expanded="false"]{
-    min-width:270px!important;
-    max-width:270px!important;
-    transform:none!important;
-    margin-left:0!important;
-}
-/* Hide the arrow toggle button inside sidebar */
-[data-testid="stSidebarNavCollapseIcon"]{display:none!important;}
-.st-emotion-cache-pkbazv{display:none!important;}
+[data-testid="stSidebar"]{display:none!important;}
+/* Top nav bar */
+.topnav{background:linear-gradient(90deg,#1a0533,#2d1063);border-bottom:1px solid #4c1d95;padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:999;}
+.topnav-title{font-family:Sora,sans-serif;font-size:15px;font-weight:600;color:#e8d5ff;margin-right:8px;white-space:nowrap;}
+.topnav-btn{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #2d1063;background:transparent;color:#c4b5fd;font-family:"DM Sans",sans-serif;white-space:nowrap;transition:all 0.15s;}
+.topnav-btn:hover{background:#2d1063;color:#e8d5ff;}
+.topnav-btn.active{background:#7c3aed;color:white;border-color:#7c3aed;}
 </style>
-<script>
-// Force sidebar open on load and prevent collapse
-function forceSidebar(){
-    var sidebar = document.querySelector('[data-testid="stSidebar"]');
-    var colBtn = document.querySelector('[data-testid="collapsedControl"]');
-    var colBtn2 = document.querySelector('[data-testid="stSidebarCollapsedControl"]');
-    if(sidebar){
-        sidebar.style.minWidth="270px";
-        sidebar.style.maxWidth="270px";
-        sidebar.style.transform="none";
-        sidebar.style.marginLeft="0";
-        sidebar.style.display="block";
-        sidebar.setAttribute("aria-expanded","true");
-    }
-    if(colBtn) colBtn.style.display="none";
-    if(colBtn2) colBtn2.style.display="none";
-    // Hide all collapse toggle buttons
-    document.querySelectorAll('button[kind="header"]').forEach(b=>b.style.display="none");
-}
-// Run on load and keep running
-forceSidebar();
-setInterval(forceSidebar, 500);
-window.addEventListener("load", forceSidebar);
-</script>
+
 """, unsafe_allow_html=True)
 
 DATA_FILE = "/tmp/jobs_data.json"
@@ -459,42 +420,61 @@ def age_badge(age):
     if age<=14: return '<span class="newb">NEW</span>'
     return ""
 
-# ── SIDEBAR ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("## Lets Get Hired")
-    st.markdown("**Devanshi - Dublin**")
-    q, author = st.session_state.quote
-    st.markdown(f"""<div style="background:#2d1063;border-radius:10px;padding:10px 12px;margin:8px 0;border-left:3px solid #a78bfa">
-    <div style="font-size:11px;font-style:italic;color:#ddd6fe;line-height:1.5">"{q}"</div>
-    <div style="font-size:10px;color:#a78bfa;margin-top:4px">-- {author}</div>
-    </div>""", unsafe_allow_html=True)
-    if st.button("New quote"):
-        st.session_state.quote = random.choice(QUOTES)
-        st.session_state.tip   = random.choice(JOB_SEARCH_TIPS)
-        st.session_state.fact  = random.choice(FUN_FACTS)
-        st.rerun()
-    st.markdown("---")
-    page = st.radio("", [
-        "Dashboard", "Live Jobs", "Silicon Republic",
-        "Silicon Valley & AI News",
-        "All Dublin Companies", "Startups", "Job Portals",
-        "Recruitment Agencies", "My Tracker",
-        "CV Editor", "Interview Prep",
-        "Weekly Job Plan", "Salary Guide"
-    ])
-    st.markdown("---")
-    apps = DATA["applications"]
-    st.markdown(f"**{len(apps)}** tracked  |  **{sum(1 for a in apps if a.get('status')=='Interviewing')}** interviews")
-    st.markdown("---")
-    st.markdown("[Silicon Republic](https://www.siliconrepublic.com)")
-    st.markdown("[LinkedIn Jobs](https://www.linkedin.com/jobs/search/?keywords=trust+safety+analyst&location=Dublin)")
-    st.markdown("[Indeed Ireland](https://ie.indeed.com/jobs?q=analyst&l=Dublin&fromage=1)")
-    st.markdown("[IrishJobs.ie](https://www.irishjobs.ie)")
-    st.markdown("[Otta Dublin](https://otta.com/jobs/search?location=Dublin)")
-    st.markdown("[Built In Dublin](https://builtindublin.ie/jobs)")
-    st.markdown("[CPL Recruitment](https://www.cpl.com/jobs)")
-    st.markdown("[Morgan McKinley](https://www.morganmckinley.com/ie/jobs)")
-    st.markdown("[SR Newsletter](https://www.siliconrepublic.com/newsletter)")
+# ── TOP NAVIGATION (replaces sidebar) ────────────────────────────────────────
+PAGES = [
+    "Dashboard", "Live Jobs", "Silicon Republic",
+    "Silicon Valley & AI News", "All Dublin Companies",
+    "Startups", "Job Portals", "Recruitment Agencies",
+    "My Tracker", "CV Editor", "Interview Prep",
+    "Weekly Job Plan", "Salary Guide"
+]
+
+# Quote display at top
+q, author = st.session_state.quote
+st.markdown(f"""<div class="quote-box" style="margin-bottom:0.8rem">
+<div style="font-size:13px;font-style:italic;color:#ddd6fe;line-height:1.5">"{q}"</div>
+<div style="font-size:11px;color:#a78bfa;margin-top:5px">-- {author}</div>
+</div>""", unsafe_allow_html=True)
+
+# Top nav bar with all pages as buttons
+if "page" not in st.session_state:
+    st.session_state.page = "Dashboard"
+
+# Row 1 of nav
+nav_cols1 = st.columns(len(PAGES[:7]))
+for i, p in enumerate(PAGES[:7]):
+    with nav_cols1[i]:
+        active = st.session_state.page == p
+        if st.button(p, key=f"nav1_{p}", use_container_width=True,
+                     type="primary" if active else "secondary"):
+            st.session_state.page = p
+            st.rerun()
+
+# Row 2 of nav
+nav_cols2 = st.columns(len(PAGES[7:]))
+for i, p in enumerate(PAGES[7:]):
+    with nav_cols2[i]:
+        active = st.session_state.page == p
+        if st.button(p, key=f"nav2_{p}", use_container_width=True,
+                     type="primary" if active else "secondary"):
+            st.session_state.page = p
+            st.rerun()
+
+st.markdown("<hr>", unsafe_allow_html=True)
+page = st.session_state.page
+
+# Quick stats bar
+apps = DATA["applications"]
+total_a = len(apps)
+interviews_a = sum(1 for a in apps if a.get("status")=="Interviewing")
+col_s1, col_s2, col_s3, col_s4, col_s5, col_s6 = st.columns(6)
+col_s1.markdown(f"**{total_a}** tracked")
+col_s2.markdown(f"**{interviews_a}** interviews")
+col_s3.markdown("📰 [Silicon Republic](https://www.siliconrepublic.com)")
+col_s4.markdown("💼 [LinkedIn](https://www.linkedin.com/jobs/search/?keywords=trust+safety+analyst&location=Dublin)")
+col_s5.markdown("🔍 [Indeed](https://ie.indeed.com/jobs?q=analyst&l=Dublin&fromage=1)")
+col_s6.markdown("🇮🇪 [IrishJobs](https://www.irishjobs.ie)")
+st.markdown("<hr>", unsafe_allow_html=True)
 
 apps = DATA["applications"]
 
